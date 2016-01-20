@@ -1,3 +1,8 @@
+Changes by Stéphane Mourey 2016-01-20
+--------------------------------------------------------------------------------
+* Default configuration is moved in config.base.php.
+* User configuration must be set in config.php.
+
 Changes by Stéphane Mourey 2016-01-19
 --------------------------------------------------------------------------------
 * Enabling Hashover to work in the hashover-next subdirectory, not breaking change

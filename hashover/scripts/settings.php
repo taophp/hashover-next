@@ -129,6 +129,15 @@ class Settings
 
 	public function __construct ()
 	{
+		$configFiles = array(__DIR__.'/../config.base.php',__DIR__.'/../config.php');
+		foreach ($configFiles as $configFile) {
+			if (file_exists($configFile)) include($configFile);
+		}
+		if (isset($config) && is_array($config)) {
+			foreach ($config as $k=>$v) {
+				$this->$k = $v;
+			}
+		}
 		// Setup default field options
 		foreach (array ('name', 'password', 'email', 'website') as $field) {
 			if (!isset ($this->fieldOptions[$field])) {
