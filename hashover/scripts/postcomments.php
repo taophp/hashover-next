@@ -43,6 +43,7 @@ header ('Cache-Control: post-check=0, pre-check=0', false);
 header ('Pragma: no-cache');
 
 // Autoload class files
+require_once __DIR__.'/../..//swiftmailer/lib/swift_required.php';
 spl_autoload_register (function ($classname) {
 	$classname = strtolower ($classname);
 	$error = '"' . $classname . '.php" file could not be included!';

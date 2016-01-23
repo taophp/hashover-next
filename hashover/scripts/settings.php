@@ -56,6 +56,20 @@ class Settings
 	public $popularityThreshold	= 5;				// Minimum likes a comment needs to be popular
 	public $popularityLimit		= 2;				// Number of comments allowed to become popular
 
+	// Mailer settings
+	public $useSwiftMailer = false;			// if false, use the built-in mail PHP function ; if true, use SwiftMailer instead
+	// following mailer settings are only required if you set $useSwiftMailer to true
+	protected $SwiftMailerTransport = 'SMTP'; 		// Possible values are 'SMTP' or 'Sendmail' (Send mail is available on Unix-like OSes only!)
+	// if you use SMTP as $SwiftMailerTransport, you must set the following properties
+	protected $SwiftMailerSmtpHost = 'smtp.example.org';		// the SMTP server
+	protected $SwiftMailerSmtpPort = 25;		// the port to use for connectiong the SMTP server
+	protected $SwiftMailerSmtpUsername = null; // replace with your SMTP username if your server required authentification
+	protected $SwiftMailerSmtpPassword = null; // replace with your SMTP password if your server required authentification
+	protected $SwiftMailerSmtpEncryption = null; // set to 'ssl' or 'tls' if your server required encrypted connexion
+	// if you use Sendmail as $SwiftMailerTransport, you may set the following properties if defaults do not match your case
+	protected $SwiftMailerSendmailCommand = null; // null set SwiftMail to the default command i.e. `/usr/sbin/sendmail -bs`
+
+
 	// Field options, use true/false to enable/disable a field,
 	// use 'required' to require a field be properly filled
 	public $fieldOptions = array (
@@ -138,6 +152,36 @@ class Settings
 				$this->$k = $v;
 			}
 		}
+
+		// Check if SwiftMailer is usable, fall back to the PHP built-in mail function if not
+		if ($this->useSwiftMailer) {
+			if (!function_exists('proc_open')) $this->useSwiftMailer = false;
+		}
+
+		// Check if SwiftMailer is able to use ssl or tls if required, fall back to the PHP built-in mail function if no
+		if ($this->useSwiftMailer && $this->SwiftMailerTransport === 'SMTP' && $this->SwiftMailerSmtpEncryption) {
+			if (!in_array($this->SwiftMailerSmtpEncryption,stream_get_transports()))
+				$this->useSwiftMailer = false;
+		}
+		// Init the SwiftMailerWrapper if required
+		if ($this->useSwiftMailer) {
+			$keys2init = array(
+				'SwiftMailerTransport' => 'SwiftMailerTransport',
+				'SwiftMailerSmtpHost' => 'SwiftMailerSmtpHost',
+				'SwiftMailerSmtpPort' => 'SwiftMailerSmtpPort',
+				'SwiftMailerSmtpUsername' => 'SwiftMailerSmtpUsername',
+				'SwiftMailerSmtpPassword' => 'SwiftMailerSmtpPassword',
+				'SwiftMailerSmtpEncryption' => 'SwiftMailerSmtpEncryption',
+				'SwiftMailerSendmailCommand' => '',
+			);
+			$settings = array();
+			foreach ($keys2init as $k => $v) {
+				if (isset($this->$v))
+					$settings[$k] = $this->$v;
+			}
+			swiftMailerWrapper::setInstance($settings);
+		}
+
 		// Setup default field options
 		foreach (array ('name', 'password', 'email', 'website') as $field) {
 			if (!isset ($this->fieldOptions[$field])) {

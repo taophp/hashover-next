@@ -48,6 +48,10 @@ class WriteComments extends PostData
 	protected $website = '';
 	protected $writeComment = array ();
 	protected $ajax = false;
+	protected $from4swiftMailer;
+	protected $headers2set4SwiftMailer = array();
+	protected $userFrom4swiftMailer;
+	protected $userHeaders2set4SwiftMailer = array();
 
 	// Fake inputs used as spam trap fields
 	protected $trapFields = array (
@@ -194,6 +198,14 @@ class WriteComments extends PostData
 		// Set commenter's headers to new value as well
 		if ($user === true) {
 			$this->userHeaders = $this->headers;
+		}
+		if ($this->setup->useSwiftMailer) {
+			$this->from4swiftMailer = $email;
+			$this->headers2set4SwiftMailer['Reply-To'] = $email;
+			if ($user === true) {
+				$this->userFrom4swiftMailer = $email;
+				$this->userHeaders2set4SwiftMailer['Reply-To'] = $email;
+			}
 		}
 	}
 
@@ -673,6 +685,7 @@ class WriteComments extends PostData
 		return implode ("\r\n\r\n", $paragraphs);
 	}
 
+	/** This function seems to be never used, right ? */
 	protected function sendNotification ($from, $comment, $reply = '', $permalink, $email, $header)
 	{
 		$subject  = $this->setup->domain . ' - New ';
@@ -686,7 +699,12 @@ class WriteComments extends PostData
 		$message .= 'Page: ' . $this->setup->pageURL;
 
 		// Send e-mail
-		mail ($email, $subject, $message, $header);
+		if (!$this->setup->useSwiftMailer) {
+			mail ($email, $subject, $message, $header);
+		}else{
+			$mailer = swiftMailerWrapper::getInstance();
+			$mailer->mail($email, $subject, $message,$from);
+		}
 	}
 
 	public function postComment ()
@@ -750,6 +768,12 @@ class WriteComments extends PostData
 							if (!empty ($this->email)) {
 								$from_line .= ' <' . $this->email . '>';
 							}
+
+							if (!$this->setup->useSwiftMailer) {
+								$this->userFrom4swiftMailer = $this->email;
+								$this->userHeaders2set4SwiftMailer['Reply-To'] = $this->email;
+							}
+
 						}
 
 						// Message body to original poster
@@ -760,7 +784,12 @@ class WriteComments extends PostData
 						$reply_message .= 'Page: ' . $this->setup->pageURL;
 
 						// Send
-						mail ($reply_email, $this->setup->domain . ' - New Reply', $reply_message, $this->userHeaders);
+						if (!$this->setup->useSwiftMailer) {
+							mail ($reply_email, $this->setup->domain . ' - New Reply', $reply_message, $this->userHeaders);
+						}else{
+							$mailer = swiftMailerWrapper::getInstance();
+							$mailer->mail($reply_email, $this->setup->domain . ' - New Reply', $reply_message,$from_line);
+						}
 					}
 				}
 			}
@@ -779,7 +808,12 @@ class WriteComments extends PostData
 				$webmaster_message .= 'Page: ' . $this->setup->pageURL;
 
 				// Send
-				mail ($this->setup->notificationEmail, 'New Comment', $webmaster_message, $this->headers);
+				if (!$this->setup->useSwiftMailer) {
+					mail ($this->setup->notificationEmail, 'New Comment', $webmaster_message, $this->headers);
+				}else{
+					$mailer = swiftMailerWrapper::getInstance();
+					$mailer->mail($this->setup->notificationEmail, 'New Comment', $webmaster_message,$from_line);
+				}
 			}
 
 			// Set/update user login cookie
